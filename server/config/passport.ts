@@ -9,9 +9,9 @@ const opts = {
 };
 passport.use(
   'auth',
-  new JwtStrategy(opts, async function({ username }, done) {
+  new JwtStrategy(opts, async function({ username }: {username: string}, done) {
     try {
-      let user = await prisma.user({ username });
+      const user = await prisma.user({ username });
 
       if (user) {
         done(null, user);
