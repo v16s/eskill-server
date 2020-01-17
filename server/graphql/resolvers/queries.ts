@@ -1,5 +1,20 @@
 import { prisma } from '../../prisma';
-import { Question, QuestionResponse, Questions, Courses, Campuses, TokenExistence, Global, Branches, Validate } from '../../typings/queries'
+import {
+  Question,
+  QuestionResponse, 
+  Questions, 
+  Courses, 
+  Campuses, 
+  TokenExistence, 
+  Global, 
+  Branches, 
+  Validate,
+  Faculties,
+  Student,
+  Instances,
+  Instance,
+  Problems
+} from '../../typings/queries'
 import { find } from 'lodash';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
 
@@ -81,8 +96,9 @@ export const question: Question = async (_, { id }, { bucket }) => {
       });
   });
 }
-export const faculties = async (_, { campus, course }, { user }) => {
+export const faculties: Faculties = async (_, { campus, course }, { user }) => {
   try {
+    if(!user) throw new AuthenticationError('Unauthorized')
     if (user.level == 0) {
       let faculties = await prisma.users({
         where: {
@@ -157,14 +173,13 @@ export const faculties = async (_, { campus, course }, { user }) => {
     throw new ValidationError(e.toString());
   }
 }
-export const student = async (_, { id }, { user }) => {
-  if (user.level < 4) {
+export const student: Student = async (_, { id }, { user }) => {
+  if (!user || user.level > 3) throw new AuthenticationError('Unauthorized');
     return await prisma.user({ id });
-  } else {
-    throw new AuthenticationError('Unauthorized');
-  }
+  
 }
-export const instances = async (_, { where: course }, { user }) => {
+export const instances: Instances = async (_, { where: course }, { user }) => {
+  if(!user) throw new AuthenticationError('Unauthorized')
   try {
     let where;
     if (course) {
@@ -200,12 +215,12 @@ export const instances = async (_, { where: course }, { user }) => {
     throw new ValidationError(e.toString());
   }
 }
-export const instance = async (_, { id }) => {
+export const instance: Instance = async (_, { id }) => {
   return await prisma.courseInstance({ id });
 }
-export const progress = async (_, { where: clientWhere }, { user }) => {
+export const progress: Instances = async (_, { where: clientWhere }, { user }) => {
   let where;
-
+  if(!user) throw new AuthenticationError('Unauthorized')
   if (user.level == 3) {
     where = {
       facultyID: user.id
@@ -215,7 +230,7 @@ export const progress = async (_, { where: clientWhere }, { user }) => {
     let campuses: any = await prisma.campuses();
     let campus_to_find = user.username.split('-')[2].replace(/_/, ' ');
     let campus = campuses.filter(
-      d => d.name.toLowerCase() == campus_to_find
+      (d: any | {name: string}) => d.name.toLowerCase() == campus_to_find
     )[0].name;
 
     campuses.where = {
@@ -240,8 +255,8 @@ export const progress = async (_, { where: clientWhere }, { user }) => {
     }
   });
 }
-export const acceptReject = async (_, _arg, { user }) => {
-  if (user.level == 3) {
+export const acceptReject: Instances = async (_, _arg, { user }) => {
+  if (user && user.level == 3) {
     let inst = await prisma.courseInstances({
       where: {
         status: false,
@@ -253,8 +268,8 @@ export const acceptReject = async (_, _arg, { user }) => {
     throw new AuthenticationError('Unauthorized');
   }
 }
-export const problems = async (_, _arg, { user }) => {
-  if (user.level == 3) {
+export const problems: Problems = async (_, _arg, { user }) => {
+  if (user && user.level == 3) {
     console.log(user.id);
     let problems = await prisma.problems({ where: { facultyID: user.id } });
 
