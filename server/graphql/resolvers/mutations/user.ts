@@ -1,5 +1,5 @@
 import { prisma } from '../../../prisma';
-import bcrypt from 'bcrypt-nodejs';
+import bcrypt from 'bcrypt';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
 import { promisify } from 'util';
 import jwt from 'jsonwebtoken';
@@ -61,8 +61,8 @@ export const user = {
     if (!user) {
       const { token, password } = input;
       const { username } = await prisma.recovery({ token });
-      let salt = await promisify(bcrypt.genSalt)(10);
-      let hash = await promisify(bcrypt.hash)(password, salt, null);
+      let salt = await bcrypt.genSalt(10);
+      let hash = await bcrypt.hash(password, salt, null);
       const updatedUser = await prisma.updateUser({
         where: {
           username
@@ -103,8 +103,8 @@ export const user = {
   register: (parent, { user }, ctx, info) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let salt = await promisify(bcrypt.genSalt)(10);
-        let hash = await promisify(bcrypt.hash)(user.password, salt, null);
+        let salt = await bcrypt.genSalt(10);
+        let hash = await bcrypt.hash(user.password, salt, null);
         let dbuser = await prisma.createUser({
           ...user,
           type: undefined,
