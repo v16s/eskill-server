@@ -3,5 +3,5 @@ datamodel: datamodel.prisma
 databaseType: document
 
 generate:
-  - generator: javascript-client
+  - generator: typescript-client
     output: ./server/prisma/
