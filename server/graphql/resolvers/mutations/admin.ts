@@ -1,5 +1,5 @@
 import { prisma } from '../../../prisma';
-import bcrypt from 'bcrypt-nodejs';
+import bcrypt from 'bcrypt';
 import { promisify } from 'util';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
 export const admin = {
@@ -43,8 +43,8 @@ export const admin = {
     return new Promise(async (resolve, reject) => {
       if (user.level > 1) reject(new AuthenticationError('Unauthorized'));
       try {
-        let salt = await promisify(bcrypt.genSalt)(10);
-        let hash = await promisify(bcrypt.hash)('password', salt, null);
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash('password', salt);
         let { username } = await prisma.createUser({
           username: `${name.replace(/ /g, '_')}-Admin`,
           password: hash,
@@ -63,8 +63,8 @@ export const admin = {
             let identity = `${d.name}-${d.branch}-${username
               .split('-')[0]
               .toLowerCase()}`;
-            let cSalt = await promisify(bcrypt.genSalt)(10);
-            let cHash = await promisify(bcrypt.hash)('password', cSalt, null);
+            const cSalt = await bcrypt.genSalt(10);
+            const cHash = await bcrypt.hash('password', salt);
             let { username: coordinator_id } = await prisma.createUser({
               username: `${identity.replace(/ /g, '_')}-coordinator`,
               password: cHash,
@@ -140,8 +140,8 @@ export const admin = {
               let identity = `${name}-${branch}-${admin_id
                 .split('-')[0]
                 .toLowerCase()}`;
-              let salt = await promisify(bcrypt.genSalt)(10);
-              let hash = await promisify(bcrypt.hash)('password', salt, null);
+              const salt = await bcrypt.genSalt(10);
+              const hash = await bcrypt.hash('password', salt);
               let { username } = await prisma.createUser({
                 username: `${identity.replace(/ /g, '_')}-coordinator`,
                 password: hash,

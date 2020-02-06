@@ -1,5 +1,5 @@
 import { prisma } from '../../../prisma';
-import bcrypt from 'bcrypt-nodejs';
+import bcrypt from 'bcrypt';
 import { promisify } from 'util';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
 export const campus = {
@@ -30,8 +30,8 @@ export const campus = {
   campusAddCourse: async (parent, { name, branch }, { user }) => {
     if (user.level == 1) {
       try {
-        let salt = await promisify(bcrypt.genSalt)(10);
-        let hash = await promisify(bcrypt.hash)('password', salt, null);
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash('password', salt);
         let branches = await prisma.branches({ where: { name: branch } });
         if (branches.length == 0) {
           await prisma.createBranch({ name: branch });

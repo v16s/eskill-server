@@ -1,10 +1,10 @@
 import { prisma } from '../../../prisma';
 import bcrypt from 'bcrypt';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
-import { promisify } from 'util';
 import jwt from 'jsonwebtoken';
 import * as nodemailer from 'nodemailer';
 import { Forgot, Recover, Login, Register } from '../../../typings/user';
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 function makeid(length: number) {
   let result = '';
-  let characters =
+  const characters =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
@@ -66,61 +66,62 @@ export const forgot: Forgot = async (_p, { username }, { user }) => {
 export const recover: Recover = async (_p, { input }, { user }) => {
   if (!user) {
     const { token, password } = input;
-    const { username } = await prisma.recovery({ token });
-    let salt = await bcrypt.genSalt(10);
-    let hash = await bcrypt.hash(password, salt, null);
-    const updatedUser = await prisma.updateUser({
-      where: {
-        username
-      },
-      data: {
-        password: hash
-      }
-    });
-    let jwToken = jwt.sign(updatedUser, 'eskill@care');
-    await prisma.deleteRecovery({ token });
-    return {
-      ...updatedUser,
-      jwt: `Bearer ${jwToken}`
-    };
+    const recovery = await prisma.recovery({ token });
+    if (recovery) {
+      const { username } = recovery;
+      let salt = await bcrypt.genSalt(10);
+      let hash = await bcrypt.hash(password, salt);
+      const updatedUser = await prisma.updateUser({
+        where: {
+          username
+        },
+        data: {
+          password: hash
+        }
+      });
+      let jwToken = jwt.sign(updatedUser, 'eskill@care');
+      await prisma.deleteRecovery({ token });
+      return {
+        ...updatedUser,
+        jwt: `Bearer ${jwToken}`
+      };
+    } else {
+      throw new ValidationError('no recovery');
+    }
   } else {
     throw new AuthenticationError('already logged in!');
   }
 };
-export const login: Login = async (parent, { user }, ctx, info) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let dbuser = await prisma.user({ username: user.username });
-      if (!dbuser) {
-        reject(new AuthenticationError('no user'));
-      }
+export const login: Login = async (_parent, { user }, _ctx) => {
+  try {
+    const dbuser = await prisma.user({ username: user.username });
+    if (dbuser) {
       bcrypt.compare(user.password, dbuser.password, (err, isMatch) => {
         if (isMatch) {
           let token = jwt.sign(dbuser, 'eskill@care');
-          resolve({ ...dbuser, jwt: `Bearer ${token}` });
+          return { ...dbuser, jwt: `Bearer ${token}` };
         }
-        reject(new AuthenticationError('wrong password'));
+        throw new AuthenticationError('wrong password');
       });
-    } catch (e) {
-      reject('error');
     }
-  });
+    throw new AuthenticationError('no user');
+  } catch (e) {
+    throw new ValidationError('error');
+  }
 };
-export const register: Register = async (parent, { user }, ctx, info) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let salt = await bcrypt.genSalt(10);
-      let hash = await bcrypt.hash(user.password, salt, null);
-      let dbuser = await prisma.createUser({
-        ...user,
-        type: undefined,
-        level: user.type ? 3 : 4,
-        password: hash
-      });
-      let token = jwt.sign(dbuser, 'eskill@care');
-      resolve({ ...dbuser, jwt: `Bearer ${token}` });
-    } catch (e) {
-      reject(e);
-    }
-  });
+export const register: Register = async (parent, { user }, ctx) => {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(user.password, salt);
+    const userWithoutType = { ...user, type: undefined };
+    let dbuser = await prisma.createUser({
+      ...userWithoutType,
+      level: user.type ? 3 : 4,
+      password: hash
+    });
+    let token = jwt.sign(dbuser, 'eskill@care');
+    return { ...dbuser, jwt: `Bearer ${token}` };
+  } catch (e) {
+    throw new ValidationError(e.toString());
+  }
 };
