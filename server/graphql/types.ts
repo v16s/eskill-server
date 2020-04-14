@@ -1,4 +1,4 @@
-import { gql } from 'apollo-server-express'
+import { gql } from 'apollo-server-express';
 export default gql`
   scalar Date
   type Query {
@@ -206,6 +206,7 @@ export default gql`
       picture: Upload
     ): Question
     requestCourse(course: String!, facultyID: String): CourseInstance
+    resetCourseInstance(course: String!, cid: String!): CourseInstance
     rejectCourseInstance(id: String!): CourseInstance
     createProblem(
       queID: String!
@@ -290,4 +291,4 @@ export default gql`
     success: Boolean!
     result: Boolean!
   }
-`
+`;

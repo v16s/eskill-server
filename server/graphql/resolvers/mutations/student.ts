@@ -11,6 +11,34 @@ function shuffle(array) {
   array.sort(() => Math.random() - 0.5);
 }
 export const student = {
+  resetCourseInstance: async (_parent, { course, cid }, { user }) => {
+    if (user.level !== 4) {
+      throw new AuthenticationError('Check JWT');
+    }
+    try {
+      let obj, n, total, completed;
+      let { questions: ques } = await prisma.$graphql(question, {
+        course
+      });
+      shuffle(ques);
+      n = ques.length > 100 ? 100 : ques.length;
+      obj = ques.slice(0, n).map(k => ({ ...k, status: 0 }));
+      total = n;
+      completed = 0;
+      let instance = await prisma.updateCourseInstance({
+        where: { id: cid },
+        data: {
+          completed,
+          total,
+          questions: { create: obj }
+        }
+      });
+      return instance;
+    } catch (e) {
+      throw new ValidationError(e.toString());
+    }
+  },
+
   requestCourse: async (_parent, { course, facultyID }, { user }) => {
     if (user.level == 4) {
       try {
