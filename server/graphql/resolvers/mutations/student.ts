@@ -1,5 +1,5 @@
-import { prisma } from '../../../prisma';
-import { AuthenticationError, ValidationError } from 'apollo-server-express';
+import { prisma } from "../../../prisma";
+import { AuthenticationError, ValidationError } from "apollo-server-express";
 let question = `
 query Questions($course: String!) {
     questions(where: {course: $course}){
@@ -13,7 +13,7 @@ function shuffle(array) {
 export const student = {
   resetCourseInstance: async (_parent, { course, cid }, { user }) => {
     if (user.level !== 4) {
-      throw new AuthenticationError('Check JWT');
+      throw new AuthenticationError("Check JWT");
     }
     try {
       let obj, n, total, completed;
@@ -25,12 +25,24 @@ export const student = {
       obj = ques.slice(0, n).map(k => ({ ...k, status: 0 }));
       total = n;
       completed = 0;
-      let instance = await prisma.updateCourseInstance({
+      await prisma.updateCourseInstance({
         where: { id: cid },
         data: {
           completed,
           total,
-          questions: { create: obj }
+          questions: {
+            deleteMany: {
+              status_gt: -1
+            }
+          }
+        }
+      });
+      let instance = prisma.updateCourseInstance({
+        where: { id: cid },
+        data: {
+          questions: {
+            create: obj
+          }
         }
       });
       return instance;
@@ -78,14 +90,14 @@ export const student = {
             studentName: user.name
           });
         } else {
-          throw new ValidationError('Course already exists!');
+          throw new ValidationError("Course already exists!");
         }
       } catch (e) {
         console.log(e);
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
@@ -103,7 +115,7 @@ export const student = {
           }
         });
         if (existing.length > 0) {
-          throw new ValidationError('Unresolved problems already exist');
+          throw new ValidationError("Unresolved problems already exist");
         } else {
           return await prisma.createProblem({
             queID,
@@ -121,7 +133,7 @@ export const student = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
   verifyQuestion: async (_parent, { question, cid }, { user }) => {
@@ -130,7 +142,7 @@ export const student = {
 
       let { completed, correct } = instance;
       try {
-        if (!instance) throw new ValidationError('no course');
+        if (!instance) throw new ValidationError("no course");
         let { ans: verify } = await prisma.question({ id: question });
         let status = (() => {
           let questions: any = instance.questions;
