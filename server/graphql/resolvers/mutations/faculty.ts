@@ -1,5 +1,7 @@
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
 import { prisma } from '../../../prisma';
+import { promisify } from 'util';
+import bcrypt from 'bcrypt';
 
 let question = `
 query Questions($course: String!) {
@@ -22,19 +24,19 @@ export const faculty = {
         if (status) throw new ValidationError('Invalid');
         await prisma.updateCourseInstance({
           where: { id },
-          data: { status: true }
+          data: { status: true },
         });
         let { questions: ques } = await prisma.$graphql(question, {
-          course
+          course,
         });
         shuffle(ques);
         let n = ques.length > 100 ? 100 : ques.length;
-        let obj = ques.slice(0, n).map(k => ({ ...k, status: 0 }));
+        let obj = ques.slice(0, n).map((k) => ({ ...k, status: 0 }));
         let total = n;
         let completed = 0;
         return await prisma.updateCourseInstance({
           where: { id },
-          data: { questions: { create: obj }, completed, total }
+          data: { questions: { create: obj }, completed, total },
         });
       } catch (e) {
         throw new ValidationError(e.toString());
@@ -62,7 +64,7 @@ export const faculty = {
         throw new ValidationError('Cant reject');
       problem = await prisma.updateProblem({
         where: { id },
-        data: { status: -1 }
+        data: { status: -1 },
       });
       return problem;
     } catch (e) {
@@ -89,10 +91,10 @@ export const faculty = {
           exp,
           ans,
           opt: {
-            create: Obj
+            create: Obj,
           },
-          course
-        }
+          course,
+        },
       });
       await new Promise(async (resolve, reject) => {
         if (picture && question) {
@@ -116,11 +118,29 @@ export const faculty = {
       });
       problem = await prisma.updateProblem({
         where: { id: problem.id },
-        data: { status: 2 }
+        data: { status: 2 },
       });
       return problem;
     } catch (e) {
       throw new ValidationError(e.toString());
     }
-  }
+  },
+  resetPassword: async (_p, { username, password }, { user }) => {
+    if (user.level != 3) throw new AuthenticationError('Unauthorized');
+    try {
+      let fetchUser = await prisma.user({ username });
+      let level = fetchUser.level;
+      let salt = await promisify(bcrypt.genSalt)(10);
+      let hash = await promisify(bcrypt.hash)(password, salt, null);
+      if (user.level < level) {
+        fetchUser = await prisma.updateUser({
+          where: { username },
+          data: { password: hash },
+        });
+        return fetchUser;
+      }
+    } catch (e) {
+      throw new ValidationError(e.toString());
+    }
+  },
 };

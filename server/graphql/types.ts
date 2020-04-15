@@ -207,6 +207,7 @@ export default gql`
     ): Question
     requestCourse(course: String!, facultyID: String): CourseInstance
     resetCourseInstance(course: String!, cid: String!): CourseInstance
+    resetPassword(username: String!, password: String!): User
     rejectCourseInstance(id: String!): CourseInstance
     createProblem(
       queID: String!
