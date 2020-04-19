@@ -384,22 +384,4 @@ export const admin = {
         });
     });
   },
-  resetPassword: async (_p, { username, password }, { user }) => {
-    if (user.level != 3) throw new AuthenticationError("Unauthorized");
-    try {
-      let fetchUser = await prisma.user({ username });
-      let level = fetchUser.level;
-      let salt = await bcrypt.genSalt(10);
-      let hash = await bcrypt.hash(password, salt);
-      if (user.level < level) {
-        fetchUser = await prisma.updateUser({
-          where: { username },
-          data: { password: hash },
-        });
-        return fetchUser;
-      }
-    } catch (e) {
-      throw new ValidationError(e.toString());
-    }
-  },
 };
