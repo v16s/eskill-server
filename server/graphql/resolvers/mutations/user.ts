@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "noreplysrmeskill@gmail.com",
-    pass: "srmeskillnoreply"
-  }
+    pass: "srmeskillnoreply",
+  },
 });
 
 function makeid(length: number) {
@@ -32,14 +32,14 @@ export const forgot: Forgot = async (_p, { username }, { user }) => {
         const { email } = user;
         let token;
         const recovery = await prisma.recoveries({
-          where: { username, email }
+          where: { username, email },
         });
         if (recovery.length < 1) {
           token = makeid(12);
           await prisma.createRecovery({
             token,
             username,
-            email
+            email,
           });
         } else {
           token = recovery[0].token;
@@ -50,7 +50,7 @@ export const forgot: Forgot = async (_p, { username }, { user }) => {
           from: "noreplysrmeskill@gmail.com",
           to: email,
           subject: "eSkill Password Reset",
-          html: `<p>Dear ${username}</p><p>In Order to reset the password, please click the link below: </p><p><a href="${resetURL}${token}">Reset Password</a></p>`
+          html: `<p>Dear ${username}</p><p>In Order to reset the password, please click the link below: </p><p><a href="${resetURL}${token}">Reset Password</a></p>`,
         });
         return true;
       } else {
@@ -73,17 +73,17 @@ export const recover: Recover = async (_p, { input }, { user }) => {
       let hash = await bcrypt.hash(password, salt);
       const updatedUser = await prisma.updateUser({
         where: {
-          username
+          username,
         },
         data: {
-          password: hash
-        }
+          password: hash,
+        },
       });
       let jwToken = jwt.sign(updatedUser, "eskill@care");
       await prisma.deleteRecovery({ token });
       return {
         ...updatedUser,
-        jwt: `Bearer ${jwToken}`
+        jwt: `Bearer ${jwToken}`,
       };
     } else {
       throw new ValidationError("no recovery");
@@ -104,7 +104,7 @@ export const login: Login = async (_parent, { user }, _ctx) => {
     }
     throw new AuthenticationError("no user");
   } catch (e) {
-    throw new ValidationError("error");
+    throw new ValidationError(e.toString());
   }
 };
 export const register: Register = async (parent, { user }, ctx) => {
@@ -115,7 +115,7 @@ export const register: Register = async (parent, { user }, ctx) => {
     let dbuser = await prisma.createUser({
       ...userWithoutType,
       level: user.type ? 3 : 4,
-      password: hash
+      password: hash,
     });
     let token = jwt.sign(dbuser, "eskill@care");
     return { ...dbuser, jwt: `Bearer ${token}` };

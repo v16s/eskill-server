@@ -1,15 +1,14 @@
-import { prisma } from '../../../prisma';
-import bcrypt from 'bcrypt';
-import { promisify } from 'util';
-import { AuthenticationError, ValidationError } from 'apollo-server-express';
+import { prisma } from "../../../prisma";
+import bcrypt from "bcrypt";
+import { AuthenticationError, ValidationError } from "apollo-server-express";
 export const campus = {
   updateOwnCampus: async (parent, { name, newName }, { user }) => {
-    if (user.level < 2 && user.username == `${name.replace(/ /g, '-')}-Admin`) {
+    if (user.level < 2 && user.username == `${name.replace(/ /g, "-")}-Admin`) {
       try {
         await prisma.updateUser({
-          where: { username: `${name.replace(/ /g, '-')}-Admin` },
+          where: { username: `${name.replace(/ /g, "-")}-Admin` },
           data: {
-            username: `${newName.replace(/ /g, '-')}-Admin`,
+            username: `${newName.replace(/ /g, "-")}-Admin`,
             name: `${newName} Admin`,
             campus: newName,
           },
@@ -23,7 +22,7 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
@@ -31,20 +30,20 @@ export const campus = {
     if (user.level == 1) {
       try {
         const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash('password', salt);
+        const hash = await bcrypt.hash("password", salt);
         let branches = await prisma.branches({ where: { name: branch } });
         if (branches.length == 0) {
           await prisma.createBranch({ name: branch });
         }
         let identity = `${name}-${branch}-${user.username
-          .split('-')[0]
+          .split("-")[0]
           .toLowerCase()}`;
         let { username } = await prisma.createUser({
-          username: `${identity.replace(/ /g, '_')}-coordinator`,
+          username: `${identity.replace(/ /g, "_")}-coordinator`,
           password: hash,
           name: `${identity} Coordinator`,
           campus: user.campus,
-          email: '',
+          email: "",
           level: 2,
         });
         return await prisma.createCourse({
@@ -59,7 +58,7 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
@@ -82,7 +81,7 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
@@ -106,10 +105,10 @@ export const campus = {
         });
         course = course[0];
         let identity = course.coordinator_id;
-        let iden_raw = identity.split('-').slice(0, -1);
+        let iden_raw = identity.split("-").slice(0, -1);
         iden_raw[0] = newName;
         iden_raw[1] = newBranch;
-        let iden = iden_raw.join('-');
+        let iden = iden_raw.join("-");
         await prisma.updateUser({
           where: { username: identity },
           data: {
@@ -126,14 +125,14 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
   adminAddDepartment: async (parent, { tag, name }, { user }) => {
     if (
       (user.level == 1 &&
-        user.username == `${name.replace(/ /g, '-')}-Admin`) ||
+        user.username == `${name.replace(/ /g, "-")}-Admin`) ||
       user.level < 1
     ) {
       try {
@@ -150,14 +149,14 @@ export const campus = {
         throw new ValidationError(e);
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
   adminRemoveDepartment: async (parent, { id, name }, { user }) => {
     if (
       (user.level == 1 &&
-        user.username == `${name.replace(/ /g, '-')}-Admin`) ||
+        user.username == `${name.replace(/ /g, "-")}-Admin`) ||
       user.level < 1
     ) {
       try {
@@ -174,14 +173,14 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
 
   adminUpdateDepartment: async (parent, { id, name, tag }, { user }) => {
     if (
       (user.level == 1 &&
-        user.username == `${name.replace(/ /g, '-')}-Admin`) ||
+        user.username == `${name.replace(/ /g, "-")}-Admin`) ||
       user.level < 1
     ) {
       try {
@@ -206,16 +205,16 @@ export const campus = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError('Unauthorized');
+      throw new AuthenticationError("Unauthorized");
     }
   },
   resetPassword: async (_p, { username, password }, { user }) => {
-    if (user.level != 3) throw new AuthenticationError('Unauthorized');
+    if (user.level != 3) throw new AuthenticationError("Unauthorized");
     try {
       let fetchUser = await prisma.user({ username });
       let level = fetchUser.level;
-      let salt = await promisify(bcrypt.genSalt)(10);
-      let hash = await promisify(bcrypt.hash)(password, salt, null);
+      let salt = await bcrypt.genSalt(10);
+      let hash = await bcrypt.hash(password, salt);
       if (user.level < level) {
         fetchUser = await prisma.updateUser({
           where: { username },
