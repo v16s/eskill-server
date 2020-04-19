@@ -32,7 +32,7 @@ export const global = {
     }
   },
   resetPassword: async (_p, { username, password }, { user }) => {
-    if (user.level != 3) throw new AuthenticationError("Unauthorized");
+    if (user.level > 3) throw new AuthenticationError("Unauthorized");
     try {
       let fetchUser = await prisma.user({ username });
       let level = fetchUser.level;
