@@ -1,6 +1,5 @@
 import { AuthenticationError, ValidationError } from "apollo-server-express";
 import { prisma } from "../../../prisma";
-import bcrypt from "bcrypt";
 
 let question = `
 query Questions($course: String!) {
@@ -120,24 +119,6 @@ export const faculty = {
         data: { status: 2 },
       });
       return problem;
-    } catch (e) {
-      throw new ValidationError(e.toString());
-    }
-  },
-  resetPassword: async (_p, { username, password }, { user }) => {
-    if (user.level != 3) throw new AuthenticationError("Unauthorized");
-    try {
-      let fetchUser = await prisma.user({ username });
-      let level = fetchUser.level;
-      let salt = await bcrypt.genSalt(10);
-      let hash = await bcrypt.hash(password, salt, null);
-      if (user.level < level) {
-        fetchUser = await prisma.updateUser({
-          where: { username },
-          data: { password: hash },
-        });
-        return fetchUser;
-      }
     } catch (e) {
       throw new ValidationError(e.toString());
     }
