@@ -55,7 +55,7 @@ export const faculty = {
     }
   },
   facultyRejectProblem: async (_p, { id }, { user }) => {
-    if (user.level != 3) throw new AuthenticationError("Unauthorized");
+    if (user.level > 3) throw new AuthenticationError("Unauthorized");
     try {
       let problem = await prisma.problem({ id: id });
       if (problem.facultyID != user.id)
@@ -74,7 +74,7 @@ export const faculty = {
     { id, course, name, desc, exp, Obj, ans, picture },
     { user, bucket }
   ) => {
-    if (user.level !== 3) throw new AuthenticationError("Unauthorized");
+    if (user.level > 3) throw new AuthenticationError("Unauthorized");
     try {
       let queID: string = id;
       let problems = await prisma.problems({ where: { queID } });
