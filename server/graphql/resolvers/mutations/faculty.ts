@@ -79,8 +79,12 @@ export const faculty = {
       let queID: string = id;
       let problems = await prisma.problems({ where: { queID } });
       let problem = problems[0];
-      if (problem.facultyID != user.id)
+      if (user.level == 3 && problem.facultyID != user.id)
         throw new ValidationError("Cant resolve");
+      await prisma.updateProblem({
+        where: { id: problem.id },
+        data: { status: 1 },
+      });
       let question = await prisma.updateQuestion({
         where: { id },
         data: {
