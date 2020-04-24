@@ -1,5 +1,5 @@
-import { prisma } from "../../../prisma";
-import { AuthenticationError, ValidationError } from "apollo-server-express";
+import { prisma } from '../../../prisma';
+import { AuthenticationError, ValidationError } from 'apollo-server-express';
 let question = `
 query Questions($course: String!) {
     questions(where: {course: $course}){
@@ -13,16 +13,16 @@ function shuffle(array) {
 export const student = {
   resetCourseInstance: async (_parent, { course, cid }, { user }) => {
     if (user.level !== 4) {
-      throw new AuthenticationError("Check JWT");
+      throw new AuthenticationError('Check JWT');
     }
     try {
       let obj, n, total, completed;
       let { questions: ques } = await prisma.$graphql(question, {
-        course
+        course,
       });
       shuffle(ques);
       n = ques.length > 100 ? 100 : ques.length;
-      obj = ques.slice(0, n).map(k => ({ ...k, status: 0 }));
+      obj = ques.slice(0, n).map((k) => ({ ...k, status: 0 }));
       total = n;
       completed = 0;
       await prisma.updateCourseInstance({
@@ -30,20 +30,21 @@ export const student = {
         data: {
           completed,
           total,
+          correct: 0,
           questions: {
             deleteMany: {
-              status_gt: -1
-            }
-          }
-        }
+              status_gt: -1,
+            },
+          },
+        },
       });
       let instance = prisma.updateCourseInstance({
         where: { id: cid },
         data: {
           questions: {
-            create: obj
-          }
-        }
+            create: obj,
+          },
+        },
       });
       return instance;
     } catch (e) {
@@ -57,7 +58,7 @@ export const student = {
         let studID = user.id;
         let { campus, department } = user;
         let courseinstances = await prisma.courseInstances({
-          where: { studID, facultyID, course, campus }
+          where: { studID, facultyID, course, campus },
         });
         if (courseinstances.length == 0) {
           let c = await prisma.courses({ where: { name: course, campus } });
@@ -66,11 +67,11 @@ export const student = {
           let obj, n, total, completed;
           if (status == true) {
             let { questions: ques } = await prisma.$graphql(question, {
-              course
+              course,
             });
             shuffle(ques);
             n = ques.length > 100 ? 100 : ques.length;
-            obj = ques.slice(0, n).map(k => ({ ...k, status: 0 }));
+            obj = ques.slice(0, n).map((k) => ({ ...k, status: 0 }));
             total = n;
             completed = 0;
           } else {
@@ -87,17 +88,17 @@ export const student = {
             department,
             status,
             studentReg: user.username,
-            studentName: user.name
+            studentName: user.name,
           });
         } else {
-          throw new ValidationError("Course already exists!");
+          throw new ValidationError('Course already exists!');
         }
       } catch (e) {
         console.log(e);
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError("Unauthorized");
+      throw new AuthenticationError('Unauthorized');
     }
   },
 
@@ -111,11 +112,11 @@ export const student = {
           where: {
             queID,
             studID,
-            status: 0
-          }
+            status: 0,
+          },
         });
         if (existing.length > 0) {
-          throw new ValidationError("Unresolved problems already exist");
+          throw new ValidationError('Unresolved problems already exist');
         } else {
           return await prisma.createProblem({
             queID,
@@ -125,7 +126,7 @@ export const student = {
             course,
             campus,
             department,
-            facultyID
+            facultyID,
           });
         }
       } catch (e) {
@@ -133,7 +134,7 @@ export const student = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError("Unauthorized");
+      throw new AuthenticationError('Unauthorized');
     }
   },
   verifyQuestion: async (_parent, { question, cid }, { user }) => {
@@ -142,11 +143,11 @@ export const student = {
 
       let { completed, correct } = instance;
       try {
-        if (!instance) throw new ValidationError("no course");
+        if (!instance) throw new ValidationError('no course');
         let { ans: verify } = await prisma.question({ id: question });
         let status = (() => {
           let questions: any = instance.questions;
-          let { ans } = questions.find(d => d.id == question);
+          let { ans } = questions.find((d) => d.id == question);
           if (ans == verify) {
             correct++;
             return 2;
@@ -163,11 +164,11 @@ export const student = {
               updateMany: {
                 where: { id: question },
                 data: {
-                  status
-                }
-              }
-            }
-          }
+                  status,
+                },
+              },
+            },
+          },
         });
         return instance;
       } catch (e) {
@@ -189,16 +190,16 @@ export const student = {
               updateMany: {
                 where: { id: question },
                 data: {
-                  ans: answer
-                }
-              }
-            }
-          }
+                  ans: answer,
+                },
+              },
+            },
+          },
         });
         return instance;
       } catch (e) {
         throw new ValidationError(e.toString());
       }
     }
-  }
+  },
 };
