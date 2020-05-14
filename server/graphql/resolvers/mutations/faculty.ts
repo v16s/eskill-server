@@ -1,5 +1,5 @@
-import { AuthenticationError, ValidationError } from "apollo-server-express";
-import { prisma } from "../../../prisma";
+import { AuthenticationError, ValidationError } from 'apollo-server-express';
+import { prisma } from '../../../prisma';
 
 let question = `
 query Questions($course: String!) {
@@ -18,8 +18,8 @@ export const faculty = {
         let instance = await prisma.courseInstance({ id });
         let { course, status } = instance;
         if (instance.facultyID != user.id)
-          throw new AuthenticationError("Unauthorized");
-        if (status) throw new ValidationError("Invalid");
+          throw new AuthenticationError('Unauthorized');
+        if (status) throw new ValidationError('Invalid');
         await prisma.updateCourseInstance({
           where: { id },
           data: { status: true },
@@ -40,26 +40,27 @@ export const faculty = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError("Unauthorized");
+      throw new AuthenticationError('Unauthorized');
     }
   },
   rejectCourseInstance: async (_parent, { id }, { user }) => {
     if (user.level == 3) {
       try {
-        return await prisma.deleteCourseInstance({ id });
+        // removed ability to delete
+        return await prisma.courseInstance({ id });
       } catch (e) {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError("Unauthorized");
+      throw new AuthenticationError('Unauthorized');
     }
   },
   facultyRejectProblem: async (_p, { id }, { user }) => {
-    if (parseInt(user.level) > 3) throw new AuthenticationError("Unauthorized");
+    if (parseInt(user.level) > 3) throw new AuthenticationError('Unauthorized');
     try {
       let problem = await prisma.problem({ id: id });
       if (problem.facultyID != user.id)
-        throw new ValidationError("Cant reject");
+        throw new ValidationError('Cant reject');
       problem = await prisma.updateProblem({
         where: { id },
         data: { status: -1 },
@@ -74,13 +75,13 @@ export const faculty = {
     { id, course, name, desc, exp, Obj, ans, picture },
     { user, bucket }
   ) => {
-    if (parseInt(user.level) > 3) throw new AuthenticationError("Unauthorized");
+    if (parseInt(user.level) > 3) throw new AuthenticationError('Unauthorized');
     try {
       let queID: string = id;
       let problems = await prisma.problems({ where: { queID } });
       let problem = problems[0];
       if (user.level == 3 && problem.facultyID != user.id)
-        throw new ValidationError("Cant resolve");
+        throw new ValidationError('Cant resolve');
       await prisma.updateProblem({
         where: { id: problem.id },
         data: { status: 1 },
@@ -111,7 +112,7 @@ export const faculty = {
           let img = `${question.id}.jpg`;
           createReadStream()
             .pipe(bucket.openUploadStream(img))
-            .on("finish", () => {
+            .on('finish', () => {
               resolve(question);
             });
         } else {
