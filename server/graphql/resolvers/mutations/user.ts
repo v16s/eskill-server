@@ -1,22 +1,22 @@
-import { prisma } from "../../../prisma";
-import bcrypt from "bcrypt";
-import { AuthenticationError, ValidationError } from "apollo-server-express";
-import jwt from "jsonwebtoken";
-import * as nodemailer from "nodemailer";
-import { Forgot, Recover, Login, Register } from "../../../typings/user";
+import { prisma } from '../../../prisma';
+import bcrypt from 'bcrypt';
+import { AuthenticationError, ValidationError } from 'apollo-server-express';
+import jwt from 'jsonwebtoken';
+import * as nodemailer from 'nodemailer';
+import { Forgot, Recover, Login, Register } from '../../../typings/user';
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service: 'gmail',
   auth: {
-    user: "noreplysrmeskill@gmail.com",
-    pass: "srmeskillnoreply",
+    user: 'noreplysrmeskill@gmail.com',
+    pass: 'srmeskillnoreply',
   },
 });
 
 function makeid(length: number) {
-  let result = "";
+  let result = '';
   const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
@@ -45,22 +45,22 @@ export const forgot: Forgot = async (_p, { username }, { user }) => {
           token = recovery[0].token;
         }
         await prisma.createRecovery;
-        const resetURL = "http://care.srmist.edu.in/eskill/forgot/";
+        const resetURL = 'http://care.srmist.edu.in/eskill/forgot/';
         transporter.sendMail({
-          from: "noreplysrmeskill@gmail.com",
+          from: 'noreplysrmeskill@gmail.com',
           to: email,
-          subject: "eSkill Password Reset",
+          subject: 'eSkill Password Reset',
           html: `<p>Dear ${username}</p><p>In Order to reset the password, please click the link below: </p><p><a href="${resetURL}${token}">Reset Password</a></p>`,
         });
         return true;
       } else {
-        throw new ValidationError("Email is No");
+        throw new ValidationError('Email is No');
       }
     } catch (e) {
       throw new ValidationError(e.toString());
     }
   } else {
-    throw new AuthenticationError("already logged in");
+    throw new AuthenticationError('already logged in');
   }
 };
 export const recover: Recover = async (_p, { input }, { user }) => {
@@ -79,17 +79,17 @@ export const recover: Recover = async (_p, { input }, { user }) => {
           password: hash,
         },
       });
-      let jwToken = jwt.sign(updatedUser, "eskill@care");
+      let jwToken = jwt.sign(updatedUser, 'eskill@care');
       await prisma.deleteRecovery({ token });
       return {
         ...updatedUser,
         jwt: `Bearer ${jwToken}`,
       };
     } else {
-      throw new ValidationError("no recovery");
+      throw new ValidationError('no recovery');
     }
   } else {
-    throw new AuthenticationError("already logged in!");
+    throw new AuthenticationError('already logged in!');
   }
 };
 export const login: Login = async (_parent, { user }, _ctx) => {
@@ -97,12 +97,12 @@ export const login: Login = async (_parent, { user }, _ctx) => {
     const dbuser = await prisma.user({ username: user.username });
     if (dbuser) {
       if (await bcrypt.compare(user.password, dbuser.password)) {
-        let token = jwt.sign(dbuser, "eskill@care");
+        let token = jwt.sign(dbuser, 'eskill@care');
         return { ...dbuser, jwt: `Bearer ${token}` };
       }
-      throw new AuthenticationError("wrong password");
+      throw new AuthenticationError('wrong password');
     }
-    throw new AuthenticationError("no user");
+    throw new AuthenticationError('no user');
   } catch (e) {
     throw new ValidationError(e.toString());
   }
@@ -117,9 +117,25 @@ export const register: Register = async (parent, { user }, ctx) => {
       level: user.type ? 3 : 4,
       password: hash,
     });
-    let token = jwt.sign(dbuser, "eskill@care");
+    let token = jwt.sign(dbuser, 'eskill@care');
     return { ...dbuser, jwt: `Bearer ${token}` };
   } catch (e) {
     throw new ValidationError(e.toString());
+  }
+};
+export const resetPassword = async (_p, { username, password }, { user }) => {
+  if (user.level > 2) throw new AuthenticationError('Unauthorized');
+  try {
+    let { level } = await prisma.user({ username });
+    let salt = await bcrypt.genSalt(10);
+    let hash = await bcrypt.hash(password, salt);
+    if (user.level < level) {
+      return await prisma.updateUser({
+        where: { username },
+        data: { password: hash },
+      });
+    }
+  } catch (e) {
+    throw new ValidationError('User not found');
   }
 };

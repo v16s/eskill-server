@@ -1,6 +1,6 @@
-import { prisma } from "../../../prisma";
-import { AuthenticationError, ValidationError } from "apollo-server-express";
-import bcrypt from "bcrypt";
+import { prisma } from '../../../prisma';
+import { AuthenticationError, ValidationError } from 'apollo-server-express';
+import bcrypt from 'bcrypt';
 export const global = {
   toggleCourseAutomation: async (
     _p,
@@ -28,23 +28,7 @@ export const global = {
         throw new ValidationError(e.toString());
       }
     } else {
-      throw new AuthenticationError("Unauthorized");
-    }
-  },
-  resetPassword: async (_p, { username, password }, { user }) => {
-    if (user.level > 3) throw new AuthenticationError("Unauthorized");
-    try {
-      let { level } = await prisma.user({ username });
-      let salt = await bcrypt.genSalt(10);
-      let hash = await bcrypt.hash(password, salt);
-      if (user.level < level) {
-        return await prisma.updateUser({
-          where: { username },
-          data: { password: hash },
-        });
-      }
-    } catch (e) {
-      throw new ValidationError("User not found");
+      throw new AuthenticationError('Unauthorized');
     }
   },
 };
