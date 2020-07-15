@@ -1,6 +1,6 @@
 import { prisma } from '../../../prisma';
 import { AuthenticationError, ValidationError } from 'apollo-server-express';
-import bcrypt from 'bcrypt';
+
 export const global = {
   toggleCourseAutomation: async (
     _p,
