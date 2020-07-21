@@ -46,8 +46,12 @@ export const faculty = {
   rejectCourseInstance: async (_parent, { id }, { user }) => {
     if (user.level == 3) {
       try {
-        // removed ability to delete
-        return await prisma.courseInstance({ id });
+        let instance = await prisma.courseInstance({ id });
+        if (instance.facultyID != user.id) {
+          throw new Error('Faculty must be the same');
+        }
+        await prisma.deleteCourseInstance({ id });
+        return instance;
       } catch (e) {
         throw new ValidationError(e.toString());
       }
